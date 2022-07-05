@@ -23,6 +23,7 @@ class Form_backend(QtWidgets.QMainWindow):
         model = QtWidgets.QFileSystemModel()
         model.setRootPath(QtCore.QDir.currentPath())
         self.ui.treeView.setModel(model)
+        self.ui.treeView.clicked.connect(self.changeDir)
 
 
         # заполнение entringStringLabel и lineEdit
@@ -43,6 +44,11 @@ class Form_backend(QtWidgets.QMainWindow):
             self.ui.entringStringlineEdit.setPlaceholderText('1000100110')
         else:
             self.ui.entringStringlineEdit.setPlaceholderText('ключевое слово')
+
+    def changeDir(self):
+        model = self.ui.treeView.model()
+        index = QtWidgets.QFileSystemModel(model).filePath(self.ui.treeView.selectedIndexes()[0])
+        self.ui.selectedDir_lineEdit.setText(str(index))
 
     def initThreads(self):
         self.findfileThread = TFindFileThread()

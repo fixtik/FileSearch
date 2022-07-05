@@ -19,8 +19,8 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QHBoxLayout,
     QHeaderView, QLabel, QLineEdit, QMainWindow,
     QMenu, QMenuBar, QPushButton, QSizePolicy,
-    QStatusBar, QTableView, QTreeView, QVBoxLayout,
-    QWidget)
+    QSplitter, QStatusBar, QTableView, QTreeView,
+    QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -35,26 +35,42 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalLayout_4 = QVBoxLayout(self.centralwidget)
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.verticalLayout_3 = QVBoxLayout()
+        self.splitter_2 = QSplitter(self.centralwidget)
+        self.splitter_2.setObjectName(u"splitter_2")
+        self.splitter_2.setOrientation(Qt.Vertical)
+        self.splitter = QSplitter(self.splitter_2)
+        self.splitter.setObjectName(u"splitter")
+        self.splitter.setOrientation(Qt.Horizontal)
+        self.widget = QWidget(self.splitter)
+        self.widget.setObjectName(u"widget")
+        self.verticalLayout_3 = QVBoxLayout(self.widget)
         self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.treeView = QTreeView(self.centralwidget)
+        self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.treeView = QTreeView(self.widget)
         self.treeView.setObjectName(u"treeView")
 
-        self.horizontalLayout_2.addWidget(self.treeView)
+        self.verticalLayout_3.addWidget(self.treeView)
 
-        self.verticalLayout_2 = QVBoxLayout()
+        self.selectedDir_lineEdit = QLineEdit(self.widget)
+        self.selectedDir_lineEdit.setObjectName(u"selectedDir_lineEdit")
+
+        self.verticalLayout_3.addWidget(self.selectedDir_lineEdit)
+
+        self.splitter.addWidget(self.widget)
+        self.widget1 = QWidget(self.splitter)
+        self.widget1.setObjectName(u"widget1")
+        self.verticalLayout_2 = QVBoxLayout(self.widget1)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.settingSearchLabel = QLabel(self.centralwidget)
+        self.settingSearchLabel = QLabel(self.widget1)
         self.settingSearchLabel.setObjectName(u"settingSearchLabel")
         self.settingSearchLabel.setMaximumSize(QSize(16777215, 15))
 
         self.verticalLayout.addWidget(self.settingSearchLabel)
 
-        self.chooseSettingComboBox = QComboBox(self.centralwidget)
+        self.chooseSettingComboBox = QComboBox(self.widget1)
         self.chooseSettingComboBox.addItem("")
         self.chooseSettingComboBox.addItem("")
         self.chooseSettingComboBox.addItem("")
@@ -62,18 +78,18 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addWidget(self.chooseSettingComboBox)
 
-        self.entringStringLabel = QLabel(self.centralwidget)
+        self.entringStringLabel = QLabel(self.widget1)
         self.entringStringLabel.setObjectName(u"entringStringLabel")
         self.entringStringLabel.setMaximumSize(QSize(16777215, 15))
 
         self.verticalLayout.addWidget(self.entringStringLabel)
 
-        self.entringStringlineEdit = QLineEdit(self.centralwidget)
+        self.entringStringlineEdit = QLineEdit(self.widget1)
         self.entringStringlineEdit.setObjectName(u"entringStringlineEdit")
 
         self.verticalLayout.addWidget(self.entringStringlineEdit)
 
-        self.recursionSearchcheckBox = QCheckBox(self.centralwidget)
+        self.recursionSearchcheckBox = QCheckBox(self.widget1)
         self.recursionSearchcheckBox.setObjectName(u"recursionSearchcheckBox")
 
         self.verticalLayout.addWidget(self.recursionSearchcheckBox)
@@ -83,14 +99,14 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.startSearchpushButton = QPushButton(self.centralwidget)
+        self.startSearchpushButton = QPushButton(self.widget1)
         self.startSearchpushButton.setObjectName(u"startSearchpushButton")
         self.startSearchpushButton.setMinimumSize(QSize(150, 80))
         self.startSearchpushButton.setMaximumSize(QSize(16777215, 80))
 
         self.horizontalLayout.addWidget(self.startSearchpushButton)
 
-        self.stopSearchpushButton = QPushButton(self.centralwidget)
+        self.stopSearchpushButton = QPushButton(self.widget1)
         self.stopSearchpushButton.setObjectName(u"stopSearchpushButton")
         self.stopSearchpushButton.setMinimumSize(QSize(150, 80))
 
@@ -99,19 +115,13 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addLayout(self.horizontalLayout)
 
-
-        self.horizontalLayout_2.addLayout(self.verticalLayout_2)
-
-
-        self.verticalLayout_3.addLayout(self.horizontalLayout_2)
-
-        self.tableView = QTableView(self.centralwidget)
+        self.splitter.addWidget(self.widget1)
+        self.splitter_2.addWidget(self.splitter)
+        self.tableView = QTableView(self.splitter_2)
         self.tableView.setObjectName(u"tableView")
+        self.splitter_2.addWidget(self.tableView)
 
-        self.verticalLayout_3.addWidget(self.tableView)
-
-
-        self.verticalLayout_4.addLayout(self.verticalLayout_3)
+        self.verticalLayout_4.addWidget(self.splitter_2)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.mainMenumenubar = QMenuBar(MainWindow)
