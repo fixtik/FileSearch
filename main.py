@@ -46,12 +46,22 @@ class Form_backend(QtWidgets.QMainWindow):
             self.ui.entringStringlineEdit.setPlaceholderText('ключевое слово')
 
     def changeDir(self):
+        """получение пути к выбранному в treeview каталогу"""
         model = self.ui.treeView.model()
-        index = QtWidgets.QFileSystemModel(model).filePath(self.ui.treeView.selectedIndexes()[0])
-        self.ui.selectedDir_lineEdit.setText(str(index))
+        dir = QtWidgets.QFileSystemModel(model).filePath(self.ui.treeView.selectedIndexes()[0])
+        if os.path.isfile(dir):
+            dir = os.path.dirname(dir)
+        self.ui.selectedDir_lineEdit.setText(str(dir))
+
+    def setValuesForFindeFileThread(self):
+        """установка начальных значений для потока"""
+        self.findfileThread.ext = self.ui.entringStringlineEdit.text().split()
+        self.findfileThread.recursion = self.ui.recursionSearchcheckBox.checkState()
+        self.findfileThread.startDir = self.ui.selectedDir_lineEdit.text()
 
     def initThreads(self):
         self.findfileThread = TFindFileThread()
+        self.findfileThread.infoSignal.connect(self.addItemToResultTable)
 
     def startSearchButtonClick(self):
         """изменяет состояние визуальных элементов и запускает поток"""
@@ -60,6 +70,7 @@ class Form_backend(QtWidgets.QMainWindow):
         self.ui.chooseSettingComboBox.setEnabled(False)
         self.ui.entringStringlineEdit.setEnabled(False)
         self.ui.recursionSearchcheckBox.setEnabled(False)
+        self.setValuesForFindeFileThread()
         self.findfileThread.start()
         self.ui.tableView.setVisible(True)
 
@@ -72,21 +83,30 @@ class Form_backend(QtWidgets.QMainWindow):
         self.ui.recursionSearchcheckBox.setEnabled(True)
         self.findfileThread.Flag = False
 
+
     def createQStandardItemModel(self) -> QtGui.QStandardItemModel:
         sim = QtGui.QStandardItemModel()
         sim.setHorizontalHeaderLabels(["№ п/п", "Путь", "Имя файла", "Размер"])
 
         return sim
 
+    def addItemToResultTable(self, info: list):
+        """добавляет в таблицу информацию о найденных файлах"""
+        if info.count()>0:
+            sim = QtGui.QStandardItemModel()
+            item = QtGui.QStandardItem((info[0]))
+
+
 
 class TFindFileThread(QtCore.QThread):
-    infoSignal = QtCore.Signal(list)
+    infoSignal = QtCore.Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.Flag = None
         self.startDir = None
         self.ext = None
+        self.recursion = False
 
 
     def run(self) -> None:
@@ -106,14 +126,16 @@ class TFindFileThread(QtCore.QThread):
                 subfolders.append(f.path)
             if f.is_file():
                 if os.path.splitext(f.name)[1].lower() in ext:
+                    self.infoSignal.emit(f.path)
                     files.append(f.path)
             if not (self.Flag):
+                os.scandir().close()
                 break
-
-        for dir in list(subfolders):
-            sf, f = self.run_fast_scandir(dir, ext)
-            subfolders.extend(sf)
-            files.extend(f)
+        if self.recursion:
+            for dir in list(subfolders):
+                sf, f = self.run_fast_scandir(dir, ext)
+                subfolders.extend(sf)
+                files.extend(f)
         return [subfolders, files]
 
 
