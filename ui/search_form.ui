@@ -16,126 +16,136 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_4">
     <item>
-     <widget class="QSplitter" name="splitter_2">
+     <widget class="QSplitter" name="splitter">
       <property name="orientation">
-       <enum>Qt::Vertical</enum>
+       <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QSplitter" name="splitter">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <widget class="QWidget" name="">
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <widget class="QTreeView" name="treeView"/>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="selectedDir_lineEdit"/>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="">
-        <layout class="QVBoxLayout" name="verticalLayout_2">
-         <item>
-          <layout class="QVBoxLayout" name="verticalLayout">
-           <item>
-            <widget class="QLabel" name="settingSearchLabel">
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>15</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Поиск по:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QComboBox" name="chooseSettingComboBox">
-             <item>
-              <property name="text">
-               <string>по расширению</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>по бинарным сигнатурам</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>по строке</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="entringStringLabel">
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>15</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Введите данные для поиска </string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="entringStringlineEdit"/>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="recursionSearchcheckBox">
-             <property name="text">
-              <string>Рекурсивный поиск</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <widget class="QPushButton" name="startSearchpushButton">
-             <property name="minimumSize">
-              <size>
-               <width>150</width>
-               <height>80</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>80</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Начать поиск</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="stopSearchpushButton">
-             <property name="minimumSize">
-              <size>
-               <width>150</width>
-               <height>80</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Остановить</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QTreeView" name="treeView"/>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="selectedDir_lineEdit"/>
+        </item>
+       </layout>
       </widget>
-      <widget class="QTableView" name="tableView"/>
+      <widget class="QWidget" name="">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QLabel" name="settingSearchLabel">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>15</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Поиск по:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="chooseSettingComboBox">
+            <item>
+             <property name="text">
+              <string>по расширению</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>по бинарным сигнатурам</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>по строке</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="entringStringLabel">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>15</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Введите данные для поиска </string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="entringStringlineEdit"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="recursionSearchcheckBox">
+            <property name="text">
+             <string>Рекурсивный поиск</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QPushButton" name="startSearchpushButton">
+            <property name="minimumSize">
+             <size>
+              <width>150</width>
+              <height>80</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>80</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Начать поиск</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="stopSearchpushButton">
+            <property name="minimumSize">
+             <size>
+              <width>150</width>
+              <height>80</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Остановить</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
      </widget>
+    </item>
+    <item>
+     <widget class="QTableView" name="tableView"/>
     </item>
    </layout>
   </widget>

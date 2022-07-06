@@ -1,5 +1,6 @@
 import os
 import sys
+import datetime
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
@@ -39,11 +40,14 @@ class Form_backend(QtWidgets.QMainWindow):
         start_text = 'Введите данные для поиска '
         self.ui.entringStringLabel.setText(start_text+self.ui.chooseSettingComboBox.currentText())
         if str.find(self.ui.entringStringLabel.text(), 'расширению') != -1:
-            self.ui.entringStringlineEdit.setPlaceholderText('*.*')
+            self.ui.entringStringlineEdit.setPlaceholderText('Задайте расширения файлов вида ".txt" через пробел')
+            self.kind_of_search = 1
         elif str.find(self.ui.entringStringLabel.text(), 'сигнатурам') != -1:
             self.ui.entringStringlineEdit.setPlaceholderText('1000100110')
+            self.kind_of_search = 2
         else:
             self.ui.entringStringlineEdit.setPlaceholderText('ключевое слово')
+            self.kind_of_search = 3
 
     def changeDir(self):
         """получение пути к выбранному в treeview каталогу"""
@@ -53,26 +57,58 @@ class Form_backend(QtWidgets.QMainWindow):
             dir = os.path.dirname(dir)
         self.ui.selectedDir_lineEdit.setText(str(dir))
 
-    def setValuesForFindeFileThread(self):
-        """установка начальных значений для потока"""
-        self.findfileThread.ext = self.ui.entringStringlineEdit.text().split()
+    def setValuesForFindeFileThread(self) -> bool:
+        """установка начальных значений для потока в зависимости от выбранного вида поиска"""
+        # если не выбрана директория или не заданы условия поска
+        if not self.ui.entringStringlineEdit.text().split() or not self.ui.selectedDir_lineEdit.text():
+            return False
         self.findfileThread.recursion = self.ui.recursionSearchcheckBox.checkState()
         self.findfileThread.startDir = self.ui.selectedDir_lineEdit.text()
+        self.findfileThread.Flag = True
+        if self.kind_of_search == 1:
+            self.findfileThread.ext = self.ui.entringStringlineEdit.text().split()
+            self.findfileThread.ext_flag = True
+            self.findfileThread.flag_signatue = False
+            return True
+
+        elif self.kind_of_search == 2:
+            # если выбран поиск по сигнатуре файла
+            # проверка входных данных - в байтах или в hex задана сигнатура файла
+            s = set(self.ui.entringStringlineEdit.text())
+            if set('01') == set(self.ui.entringStringlineEdit.text()):
+                self.findfileThread.signature = bytearray(self.ui.entringStringlineEdit.text(),'ascii')
+            elif set('0123456789ABCDEF') == set(self.ui.entringStringlineEdit.text()):
+                self.findfileThread.signature = bytearray.fromhex(self.ui.entringStringlineEdit.text())
+            else:
+                return False
+            self.findfileThread.ext_flag = False
+            self.findfileThread.flag_signatue = True
+
+        else:
+            return False
+
+        return True
 
     def initThreads(self):
+        """инициализация потока"""
         self.findfileThread = TFindFileThread()
         self.findfileThread.infoSignal.connect(self.addItemToResultTable)
+        self.findfileThread.statusSignal.connect(self.showProcessInStatusBar)
+        self.findfileThread.finished.connect(self.stopSearchButtonClick)
 
     def startSearchButtonClick(self):
         """изменяет состояние визуальных элементов и запускает поток"""
-        self.ui.startSearchpushButton.setEnabled(False)
-        self.ui.stopSearchpushButton.setEnabled(True)
-        self.ui.chooseSettingComboBox.setEnabled(False)
-        self.ui.entringStringlineEdit.setEnabled(False)
-        self.ui.recursionSearchcheckBox.setEnabled(False)
-        self.setValuesForFindeFileThread()
-        self.findfileThread.start()
-        self.ui.tableView.setVisible(True)
+        self.ui.tableView.clearSpans()
+        if self.setValuesForFindeFileThread():
+
+            self.ui.startSearchpushButton.setEnabled(False)
+            self.ui.stopSearchpushButton.setEnabled(True)
+            self.ui.chooseSettingComboBox.setEnabled(False)
+            self.ui.entringStringlineEdit.setEnabled(False)
+            self.ui.recursionSearchcheckBox.setEnabled(False)
+            self.findfileThread.start()
+            self.ui.tableView.setVisible(True)
+            self.ui.statusbar.showMessage('Поиск начат')
 
     def stopSearchButtonClick(self):
         """изменяет состояние визуальных элементов и останавливает поток"""
@@ -82,24 +118,31 @@ class Form_backend(QtWidgets.QMainWindow):
         self.ui.entringStringlineEdit.setEnabled(True)
         self.ui.recursionSearchcheckBox.setEnabled(True)
         self.findfileThread.Flag = False
+        self.ui.statusbar.showMessage('Завершено')
 
 
     def createQStandardItemModel(self) -> QtGui.QStandardItemModel:
         sim = QtGui.QStandardItemModel()
-        sim.setHorizontalHeaderLabels(["№ п/п", "Путь", "Имя файла", "Размер"])
+        sim.setHorizontalHeaderLabels(["Имя файла", "Размер", "Время создания", "Время модификации", "Время последнего доступа"])
 
         return sim
 
     def addItemToResultTable(self, info: list):
-        """добавляет в таблицу информацию о найденных файлах"""
-        if info.count()>0:
-            sim = QtGui.QStandardItemModel()
-            item = QtGui.QStandardItem((info[0]))
+        """Сигнал,добавляет в таблицу информацию о найденных файлах"""
+        list_item = []
+        for s in info:
+            list_item.append(QtGui.QStandardItem(f'{s}'))
+        self.ui.tableView.model().appendRow(list_item)
+
+    def showProcessInStatusBar(self, statStr: str):
+        self.ui.statusbar.showMessage(statStr)
+
 
 
 
 class TFindFileThread(QtCore.QThread):
-    infoSignal = QtCore.Signal(str)
+    infoSignal = QtCore.Signal(list)
+    statusSignal = QtCore.Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -107,7 +150,9 @@ class TFindFileThread(QtCore.QThread):
         self.startDir = None
         self.ext = None
         self.recursion = False
-
+        self.ext_flag = True  # флаг отбора файлов по расширению
+        self.flag_signatue = False  # флаг отбора по сигнатуре
+        self.signature = None
 
     def run(self) -> None:
         if self.Flag is None:
@@ -115,27 +160,49 @@ class TFindFileThread(QtCore.QThread):
         if self.startDir is None:
             self.startDir = QtCore.QDir.currentPath()
         if self.ext is None:
-            self.ext = ['.*']
+            self.ext = ['*.*']
         self.run_fast_scandir(self.startDir, self.ext)
 
     def run_fast_scandir(self, dir, ext) -> list:  # dir: str, ext: list
         subfolders, files = [], []
 
-        for f in os.scandir(dir):
-            if f.is_dir():
-                subfolders.append(f.path)
-            if f.is_file():
-                if os.path.splitext(f.name)[1].lower() in ext:
-                    self.infoSignal.emit(f.path)
-                    files.append(f.path)
-            if not (self.Flag):
-                os.scandir().close()
-                break
-        if self.recursion:
-            for dir in list(subfolders):
-                sf, f = self.run_fast_scandir(dir, ext)
-                subfolders.extend(sf)
-                files.extend(f)
+        def add_item():
+            """добавление полученных данных в таблицу"""
+            ctime = datetime.datetime.fromtimestamp(f.stat().st_ctime).strftime("%d-%m-%Y %H:%M:%S")
+            mtime = datetime.datetime.fromtimestamp(f.stat().st_mtime).strftime("%d-%m-%Y %H:%M:%S")
+            atime = datetime.datetime.fromtimestamp(f.stat().st_atime).strftime("%d-%m-%Y %H:%M:%S")
+            self.infoSignal.emit([f.path, f"{f.stat().st_size} байт", ctime, mtime, atime])
+
+        def find_signature() -> bool:
+            """производит поиск сигнатуры в файле"""
+            with open(f.path, "rb") as sf:
+                if self.signature == sf.read(len(self.signature)):
+                    return True
+
+        try:
+            for f in os.scandir(dir):
+                self.statusSignal.emit(f'Поиск в директории {dir}')
+                if f.is_dir(follow_symlinks=False):
+                    subfolders.append(f.path)
+                if f.is_file():
+                    # проверка отбора по расширению
+                    if (ext[0] == '*.*' or os.path.splitext(f.name)[1].lower() in ext) and self.ext_flag:
+                        add_item()
+                    # проверка отбора по сигнатуре (байтовой строке)
+                    if self.flag_signatue and find_signature():
+                        add_item()
+                        #files.append(f.path)
+                if not (self.Flag):
+                    os.scandir().close()
+                    break
+            if self.recursion:
+                for dir in list(subfolders):
+                    sf, f = self.run_fast_scandir(dir, ext)
+                    subfolders.extend(sf)
+                    files.extend(f)
+        except PermissionError:
+            print(f'Объект {dir} пропущен: недостаточно прав доступа')
+            self.statusSignal.emit(f'Объект {dir} пропущен: недостаточно прав доступа')
         return [subfolders, files]
 
 
