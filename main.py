@@ -2,6 +2,7 @@ import os
 import sys
 import datetime
 import mmap
+import time
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
@@ -27,8 +28,6 @@ class Form_backend(QtWidgets.QMainWindow):
         model.setRootPath(QtCore.QDir.currentPath())
         self.ui.treeView.setModel(model)
         self.ui.treeView.clicked.connect(self.changeDir)
-        self.ui.exit_action.triggered.connect(self.exit)
-
 
         # заполнение entringStringLabel и lineEdit
         self.changeText()
@@ -154,14 +153,21 @@ class Form_backend(QtWidgets.QMainWindow):
     def showProcessInStatusBar(self, statStr: str):
         self.ui.statusbar.showMessage(statStr)
 
-    def exit(self):
-        if self.findfileThread.Flag:
+    def event(self, event: QtCore.QEvent) -> bool:
+        if event.type() == QtCore.QEvent.Close:
             msg = QtWidgets.QMessageBox()
-            reply = msg.question(title="Прервать процесс", text="Идет процесс поиска. Вы уверены, что хотите выйте", button0=QtWidgets.QMessageBox.Yes, button1=QtWidgets.QMessageBox.No )
+            msg.setText("Вы уверены, что хотите выйти?")
+            msg.setInformativeText("")
+            msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            reply = msg.exec()
             if reply == QtWidgets.QMessageBox.Yes:
                 self.findfileThread.Flag = False
-                self.close()
-
+                time.sleep(1) # задержка чтобы процесс успел остановиться
+                self.findfileThread.terminate()
+                event.accept()
+            else:
+                event.ignore()
+        return QtWidgets.QWidget.event(self, event)
 
 class TFindFileThread(QtCore.QThread):
     infoSignal = QtCore.Signal(list)
