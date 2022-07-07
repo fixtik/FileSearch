@@ -1,10 +1,12 @@
 import os
 import sys
 import datetime
+import mmap
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
 from ui.search_form import Ui_MainWindow
+
 
 class Form_backend(QtWidgets.QMainWindow):
 
@@ -25,6 +27,7 @@ class Form_backend(QtWidgets.QMainWindow):
         model.setRootPath(QtCore.QDir.currentPath())
         self.ui.treeView.setModel(model)
         self.ui.treeView.clicked.connect(self.changeDir)
+        self.ui.exit_action.triggered.connect(self.exit)
 
 
         # заполнение entringStringLabel и lineEdit
@@ -38,12 +41,13 @@ class Form_backend(QtWidgets.QMainWindow):
     def changeText(self):
         """устанавливает текст entringStringLabel и lineEdit в зависимости от chooseSettingComboBox"""
         start_text = 'Введите данные для поиска '
+        self.ui.entringStringlineEdit.setText('')
         self.ui.entringStringLabel.setText(start_text+self.ui.chooseSettingComboBox.currentText())
         if str.find(self.ui.entringStringLabel.text(), 'расширению') != -1:
             self.ui.entringStringlineEdit.setPlaceholderText('Задайте расширения файлов вида ".txt" через пробел')
             self.kind_of_search = 1
         elif str.find(self.ui.entringStringLabel.text(), 'сигнатурам') != -1:
-            self.ui.entringStringlineEdit.setPlaceholderText('1000100110')
+            self.ui.entringStringlineEdit.setPlaceholderText('Задайте значение в bin или hex')
             self.kind_of_search = 2
         else:
             self.ui.entringStringlineEdit.setPlaceholderText('ключевое слово')
@@ -69,25 +73,38 @@ class Form_backend(QtWidgets.QMainWindow):
             self.findfileThread.ext = self.ui.entringStringlineEdit.text().split()
             self.findfileThread.ext_flag = True
             self.findfileThread.flag_signatue = False
+            self.findfileThread.flag_keyword = False
             return True
 
         elif self.kind_of_search == 2:
             # если выбран поиск по сигнатуре файла
             # проверка входных данных - в байтах или в hex задана сигнатура файла
             s = set(self.ui.entringStringlineEdit.text())
-            if set('01') == set(self.ui.entringStringlineEdit.text()):
-                self.findfileThread.signature = bytearray(self.ui.entringStringlineEdit.text(),'ascii')
-            elif set('0123456789ABCDEF') == set(self.ui.entringStringlineEdit.text()):
+            if s <= set('01'):
+                self.findfileThread.signature = bytearray(self.ui.entringStringlineEdit.text(), 'ascii')
+            elif s <= set('0123456789ABCDEF'):
                 self.findfileThread.signature = bytearray.fromhex(self.ui.entringStringlineEdit.text())
             else:
+                msg = QtWidgets.QMessageBox()
+                msg.setText('Введены некорректные значения')
+                msg.exec()
                 return False
             self.findfileThread.ext_flag = False
             self.findfileThread.flag_signatue = True
+            self.findfileThread.flag_keyword = False
+
+        elif self.kind_of_search == 3:
+            # если выбран поиск по ключевому слову
+            self.findfileThread.ext_flag = False
+            self.findfileThread.flag_signatue = False
+            self.findfileThread.flag_keyword = True
+            self.findfileThread.keyword = self.ui.entringStringlineEdit.text()
 
         else:
             return False
 
         return True
+
 
     def initThreads(self):
         """инициализация потока"""
@@ -98,9 +115,9 @@ class Form_backend(QtWidgets.QMainWindow):
 
     def startSearchButtonClick(self):
         """изменяет состояние визуальных элементов и запускает поток"""
-        self.ui.tableView.clearSpans()
+        if self.ui.tableView.model().rowCount()>0:
+            self.ui.tableView.model().removeRows(0, self.ui.tableView.model().rowCount())
         if self.setValuesForFindeFileThread():
-
             self.ui.startSearchpushButton.setEnabled(False)
             self.ui.stopSearchpushButton.setEnabled(True)
             self.ui.chooseSettingComboBox.setEnabled(False)
@@ -137,7 +154,13 @@ class Form_backend(QtWidgets.QMainWindow):
     def showProcessInStatusBar(self, statStr: str):
         self.ui.statusbar.showMessage(statStr)
 
-
+    def exit(self):
+        if self.findfileThread.Flag:
+            msg = QtWidgets.QMessageBox()
+            reply = msg.question(title="Прервать процесс", text="Идет процесс поиска. Вы уверены, что хотите выйте", button0=QtWidgets.QMessageBox.Yes, button1=QtWidgets.QMessageBox.No )
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.findfileThread.Flag = False
+                self.close()
 
 
 class TFindFileThread(QtCore.QThread):
@@ -150,8 +173,10 @@ class TFindFileThread(QtCore.QThread):
         self.startDir = None
         self.ext = None
         self.recursion = False
-        self.ext_flag = True  # флаг отбора файлов по расширению
+        self.ext_flag = False  # флаг отбора файлов по расширению
         self.flag_signatue = False  # флаг отбора по сигнатуре
+        self.flag_keyword = False # флаг отбора файлов по ключевому слову
+        self.keyword = None
         self.signature = None
 
     def run(self) -> None:
@@ -163,7 +188,45 @@ class TFindFileThread(QtCore.QThread):
             self.ext = ['*.*']
         self.run_fast_scandir(self.startDir, self.ext)
 
-    def run_fast_scandir(self, dir, ext) -> list:  # dir: str, ext: list
+    @staticmethod
+    def detect_code(fname: str, size: int) -> str:
+        """
+        получение кодировки файла (не 100% решение)
+        :param fname: имя файла (полный путь)
+        :return: название кодировки
+        """
+        encoding = [
+            'utf-8',
+            'cp500',
+            'utf-16',
+            'GBK',
+            'windows-1251',
+            'ASCII',
+            'US-ASCII',
+            'Big5'
+        ]
+
+        if size > 1024:
+            size = 1024
+        for enc in encoding:
+            try:
+                with open(fname, 'r', encoding=enc) as fr:
+                    fr.read(size)
+            except (UnicodeDecodeError, LookupError):
+                pass
+            except PermissionError:
+                print('Отказано в доступе')
+            else:
+                return enc
+            return None
+
+    def run_fast_scandir(self, dir, ext) -> list:
+        """
+        Рекурсивный поиск файлов
+        :param dir: стартовая директория
+        :param ext: расширения файлов
+        :return: спискок найденных подкаталогов
+        """
         subfolders, files = [], []
 
         def add_item():
@@ -178,6 +241,47 @@ class TFindFileThread(QtCore.QThread):
             with open(f.path, "rb") as sf:
                 if self.signature == sf.read(len(self.signature)):
                     return True
+            return False
+
+        def find_string_in_file() -> bool:
+            """поиск ключевого слова в файле"""
+            # определяем кодировку файла
+            self.statusSignal.emit(f'Поиск в файле {f.path}')
+            size = f.stat().st_size
+            if size == 0:
+                return False
+            code_file = self.detect_code(f.path, size)
+
+            if code_file is None:
+                return False
+            search_str = str(self.keyword).encode().decode(code_file)
+            search_str = bytearray(search_str, code_file)
+            try:
+                with open(f.path, "rb") as fb:
+                    step = mmap.ALLOCATIONGRANULARITY
+                    if size < step:
+                        step = size
+                    offset = 0
+                    map_ = mmap.mmap(fb.fileno(), length=step, access=mmap.ACCESS_READ)
+                    while self.Flag:
+                        offset += step
+                        self.statusSignal.emit(f'Поиск в файле {f.path}')
+                        if offset + step > size:
+                            map_.close()
+                            return False
+                        if map_.find(search_str) == -1:
+                            map_ = mmap.mmap(fb.fileno(), length=step, offset=offset)
+                        else:
+                            map_.close()
+                            return True
+
+                    map_.close()
+                    return False
+            except PermissionError:
+                print(f"{f.path}: недостаточно прав")
+                return False
+
+
 
         try:
             for f in os.scandir(dir):
@@ -191,6 +295,10 @@ class TFindFileThread(QtCore.QThread):
                     # проверка отбора по сигнатуре (байтовой строке)
                     if self.flag_signatue and find_signature():
                         add_item()
+                    # проверка отбора по ключевой строке
+                    if self.flag_keyword and find_string_in_file():
+                        add_item()
+
                         #files.append(f.path)
                 if not (self.Flag):
                     os.scandir().close()
