@@ -293,6 +293,9 @@ class Form_backend(QtWidgets.QMainWindow):
             self.show_preview_window(fname)
 
     def table_view_dbl_click(self):
+        """
+        Обработка двойного клика на результирующей таблице
+        """
         listQModelIndex = self.ui.tableView.selectionModel().selectedIndexes()
         fname = self.ui.tableView.model().index(listQModelIndex[0].row(), 0).data()
         self.show_preview_window(fname)
