@@ -111,6 +111,9 @@ class Form_backend(QtWidgets.QMainWindow):
             if s <= set('01'):
                 self.findfileThread.signature = bytearray(self.ui.entringStringlineEdit.text(), 'ascii')
             elif s <= set('0123456789ABCDEF'):
+                # если задано нечетное количество сиволов, добавляем 0 спереди
+                if len(self.ui.entringStringlineEdit.text()) % 2 != 0:
+                    self.ui.entringStringlineEdit.setText('0'+self.ui.entringStringlineEdit.text())
                 self.findfileThread.signature = bytearray.fromhex(self.ui.entringStringlineEdit.text())
             else:
                 msg = QtWidgets.QMessageBox()
