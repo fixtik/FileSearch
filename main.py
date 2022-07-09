@@ -297,25 +297,23 @@ class Form_backend(QtWidgets.QMainWindow):
         fname = self.ui.tableView.model().index(listQModelIndex[0].row(), 0).data()
         self.show_preview_window(fname)
 
-    def event(self, event: QtCore.QEvent) -> bool:
+    def closeEvent(self, event: QtCore.QEvent) -> bool:
         """
-        Обработка событий
+        Обработка события закрытия программы
         """
-        if event.type() == QtCore.QEvent.Close:
-            msg = QtWidgets.QMessageBox()
-            msg.setText("Вы уверены, что хотите выйти?")
-            msg.setInformativeText("")
-            msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
-            reply = msg.exec()
-            if reply == QtWidgets.QMessageBox.Yes:
-                if self.findfileThread.Flag:
-                    self.findfileThread.Flag = False
-                    time.sleep(1) # задержка чтобы процесс успел остановиться
-                    self.findfileThread.terminate()
-                event.accept()
-            elif reply == QtWidgets.QMessageBox.No:
-                event.ignore()
-        return QtWidgets.QWidget.event(self, event)
+        msg = QtWidgets.QMessageBox()
+        msg.setText("Вы уверены, что хотите выйти?")
+        msg.setInformativeText("")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        reply = msg.exec()
+        if reply == QtWidgets.QMessageBox.Yes:
+            if self.findfileThread.Flag:
+                self.findfileThread.Flag = False
+                time.sleep(1)  # задержка чтобы процесс успел остановиться
+                self.findfileThread.terminate()
+            event.accept()
+        elif reply == QtWidgets.QMessageBox.No:
+            event.ignore()
 
 
 class TFindFileThread(QtCore.QThread):
