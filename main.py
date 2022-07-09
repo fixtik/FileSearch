@@ -303,7 +303,6 @@ class Form_backend(QtWidgets.QMainWindow):
         """
         msg = QtWidgets.QMessageBox()
         msg.setText("Вы уверены, что хотите выйти?")
-        msg.setInformativeText("")
         msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
         reply = msg.exec()
         if reply == QtWidgets.QMessageBox.Yes:
